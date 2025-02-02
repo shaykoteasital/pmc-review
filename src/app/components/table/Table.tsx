@@ -9,51 +9,49 @@ const gridStyle: React.CSSProperties = {
 };
 
 const onClick = ({ key }: { key: string }) => {
-  message.info(`Click on item ${key}`);
+  message.info(`Clicked on item ${key}`);
 };
 
 const menu = (
   <Menu onClick={onClick}>
     <Menu.Item key="1">1st menu item</Menu.Item>
     <Menu.Item key="2">2nd menu item</Menu.Item>
-    {/* <Menu.Item key="3">3rd menu item</Menu.Item> */}
   </Menu>
 );
 
-export default function DashboardTable() {
-  interface PullRequest {
-    id: number;
-    html_url: string;
-    title: string;
-  }
+interface PullRequest {
+  id: number;
+  html_url: string;
+  title: string;
+}
 
+export default function DashboardTable() {
   const [pullRequests, setPullRequests] = useState<PullRequest[]>([]);
 
   const owner = "shaykoteasital"; // Your GitHub username
-  const repo = "pmc-review"; // Replace with your actual repository name
-  const token =
-    "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"; // Replace with your GitHub token
+  const repo = "pmc-review"; // Your repository name
 
   useEffect(() => {
     const fetchPullRequests = async () => {
       try {
         const octokit = new Octokit({
-          auth: token, // Provide authentication token
+          auth: process.env.NEXT_PUBLIC_GITHUB_TOKEN, // Use an environment variable for GitHub token
         });
 
+        // Corrected the API request URL here ("/repos/{owner}/{repo}/pulls")
         const response = await octokit.request(
-          `GET/repos/${owner}/${repo}/pulls`,
+          "GET /repos/{owner}/{repo}/issues",
           {
-            owner: owner,
-            repo: repo,
+            owner,
+            repo,
             headers: {
               "X-GitHub-Api-Version": "2022-11-28",
             },
           }
         );
 
-        console.log("Pull Requests:", response);
-        setPullRequests(response?.data);
+        console.log("Pull Requests:", response.data);
+        setPullRequests(response.data);
       } catch (error) {
         console.error("Error fetching pull requests:", error);
       }
@@ -61,7 +59,7 @@ export default function DashboardTable() {
 
     fetchPullRequests();
   }, []);
-  console.log("Pull Requests:", pullRequests);
+
   return (
     <Card className="text-center" title="PMC Merge Request Review">
       {pullRequests.length > 0 ? (
