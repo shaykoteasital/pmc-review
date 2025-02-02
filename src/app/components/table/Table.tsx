@@ -9,33 +9,38 @@ const gridStyle: React.CSSProperties = {
 };
 
 const onClick = ({ key }: { key: string }) => {
-  message.info(`Click on item ${key}`);
+  message.info(`Clicked on item ${key}`);
 };
 
 const menu = (
   <Menu onClick={onClick}>
     <Menu.Item key="1">1st menu item</Menu.Item>
     <Menu.Item key="2">2nd menu item</Menu.Item>
-    {/* <Menu.Item key="3">3rd menu item</Menu.Item> */}
   </Menu>
 );
 
+interface PullRequest {
+  id: number;
+  html_url: string;
+  title: string;
+}
+
 export default function DashboardTable() {
-  const [pullRequests, setPullRequests] = useState<any[]>([]);
+  const [pullRequests, setPullRequests] = useState<PullRequest[]>([]);
 
   const owner = "shaykoteasital"; // Your GitHub username
-  const repo = "pmc-review"; // Replace with your actual repository name
-  const token = "your-personal-access-token"; // Replace with your GitHub token
+  const repo = "pmc-review"; // Your repository name
 
   useEffect(() => {
     const fetchPullRequests = async () => {
       try {
         const octokit = new Octokit({
-          auth: token, // Provide authentication token
+          auth: process.env.NEXT_PUBLIC_GITHUB_TOKEN, // Use an environment variable for GitHub token
         });
 
+        // Corrected the API request URL here ("/repos/{owner}/{repo}/pulls")
         const response = await octokit.request(
-          "GET /repos/{owner}/{repo}/pulls",
+          "GET /repos/{owner}/{repo}/issues",
           {
             owner,
             repo,
