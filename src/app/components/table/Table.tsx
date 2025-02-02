@@ -14,8 +14,8 @@ const onClick = ({ key }: { key: string }) => {
 
 const menu = (
   <Menu onClick={onClick}>
-    <Menu.Item key="1">1st menu item</Menu.Item>
-    <Menu.Item key="2">2nd menu item</Menu.Item>
+    <Menu.Item key="1">Test Ok</Menu.Item>
+    <Menu.Item key="2">Test Not Ok</Menu.Item>
   </Menu>
 );
 
@@ -40,7 +40,7 @@ export default function DashboardTable() {
 
         // Corrected the API request URL here ("/repos/{owner}/{repo}/pulls")
         const response = await octokit.request(
-          "GET /repos/{owner}/{repo}/issues",
+          "GET /repos/{owner}/{repo}/pulls",
           {
             owner,
             repo,
@@ -76,7 +76,7 @@ export default function DashboardTable() {
       <Card.Grid style={gridStyle}>
         <Dropdown overlay={menu}>
           <a onClick={(e) => e.preventDefault()}>
-            Hover me, Click menu item <DownOutlined />
+            Label <DownOutlined />
           </a>
         </Dropdown>
       </Card.Grid>
