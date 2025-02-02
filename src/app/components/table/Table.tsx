@@ -21,11 +21,18 @@ const menu = (
 );
 
 export default function DashboardTable() {
-  const [pullRequests, setPullRequests] = useState<any[]>([]);
+  interface PullRequest {
+    id: number;
+    html_url: string;
+    title: string;
+  }
+
+  const [pullRequests, setPullRequests] = useState<PullRequest[]>([]);
 
   const owner = "shaykoteasital"; // Your GitHub username
   const repo = "pmc-review"; // Replace with your actual repository name
-  const token = "your-personal-access-token"; // Replace with your GitHub token
+  const token =
+    "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"; // Replace with your GitHub token
 
   useEffect(() => {
     const fetchPullRequests = async () => {
@@ -35,18 +42,18 @@ export default function DashboardTable() {
         });
 
         const response = await octokit.request(
-          "GET /repos/{owner}/{repo}/pulls",
+          `GET/repos/${owner}/${repo}/pulls`,
           {
-            owner,
-            repo,
+            owner: owner,
+            repo: repo,
             headers: {
               "X-GitHub-Api-Version": "2022-11-28",
             },
           }
         );
 
-        console.log("Pull Requests:", response.data);
-        setPullRequests(response.data);
+        console.log("Pull Requests:", response);
+        setPullRequests(response?.data);
       } catch (error) {
         console.error("Error fetching pull requests:", error);
       }
@@ -54,7 +61,7 @@ export default function DashboardTable() {
 
     fetchPullRequests();
   }, []);
-
+  console.log("Pull Requests:", pullRequests);
   return (
     <Card className="text-center" title="PMC Merge Request Review">
       {pullRequests.length > 0 ? (
