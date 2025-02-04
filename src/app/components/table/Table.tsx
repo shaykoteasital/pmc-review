@@ -1,85 +1,96 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { Card, Dropdown, Menu, message } from "antd";
-import { DownOutlined } from "@ant-design/icons";
-import { Octokit } from "octokit";
-
-const gridStyle: React.CSSProperties = {
-  textAlign: "left",
-};
-
-const onClick = ({ key }: { key: string }) => {
-  message.info(`Clicked on item ${key}`);
-};
-
-const menu = (
-  <Menu onClick={onClick}>
-    <Menu.Item key="1">Test Ok</Menu.Item>
-    <Menu.Item key="2">Test Not Ok</Menu.Item>
-  </Menu>
-);
-
-interface PullRequest {
-  id: number;
-  html_url: string;
-  title: string;
-}
+import { Card, Image, Select } from "antd";
+import Link from "next/link";
+import { useState } from "react";
+import useUpdatePRLabel from "../hook/updateLabel";
+import useGitLabel from "../hook/useGetLabels";
+import usePullRequests from "../hook/usePullRequest";
 
 export default function DashboardTable() {
-  const [pullRequests, setPullRequests] = useState<PullRequest[]>([]);
+  const owner = "shaykoteasital";
+  const repo = "pmc-review";
+  const { pullRequests } = usePullRequests(owner, repo);
+  const { gitLabel } = useGitLabel(owner, repo);
+  const { updatePRLabel } = useUpdatePRLabel();
+  console.log("PullRequest", pullRequests);
+  console.log("GitLabel", gitLabel);
 
-  const owner = "shaykoteasital"; // Your GitHub username
-  const repo = "pmc-review"; // Your repository name
+  const [selectedLabel, setSelectedLabel] = useState<{ [key: number]: string }>(
+    {}
+  );
 
-  useEffect(() => {
-    const fetchPullRequests = async () => {
-      try {
-        const octokit = new Octokit({
-          auth: process.env.NEXT_PUBLIC_GITHUB_TOKEN, // Use an environment variable for GitHub token
-        });
+  const handleStatusChange = async (
+    value: string,
+    prId: number,
+    currentLabels: string[]
+  ) => {
+    console.log("handlestatusCnage", value, prId, currentLabels);
+    const newLabel =
+      gitLabel.find((lbl) => lbl.id === Number(value))?.name || "";
+    console.log("New Label", newLabel);
+    if (!newLabel) return;
 
-        // Corrected the API request URL here ("/repos/{owner}/{repo}/pulls")
-        const response = await octokit.request(
-          "GET /repos/{owner}/{repo}/pulls",
-          {
-            owner,
-            repo,
-            headers: {
-              "X-GitHub-Api-Version": "2022-11-28",
-            },
-          }
-        );
-
-        console.log("Pull Requests:", response.data);
-        setPullRequests(response.data);
-      } catch (error) {
-        console.error("Error fetching pull requests:", error);
-      }
-    };
-
-    fetchPullRequests();
-  }, []);
+    setSelectedLabel((prev) => ({ ...prev, [prId]: newLabel }));
+    await updatePRLabel(prId, newLabel);
+  };
 
   return (
-    <Card className="text-center" title="PMC Merge Request Review">
-      {pullRequests.length > 0 ? (
-        pullRequests.map((pr) => (
-          <Card.Grid key={pr.id} style={gridStyle}>
-            <a href={pr.html_url} target="_blank" rel="noopener noreferrer">
-              {pr.title}
-            </a>
-          </Card.Grid>
-        ))
-      ) : (
-        <Card.Grid style={gridStyle}>No Pull Requests</Card.Grid>
-      )}
-      <Card.Grid style={gridStyle}>
-        <Dropdown overlay={menu}>
-          <a onClick={(e) => e.preventDefault()}>
-            Label <DownOutlined />
-          </a>
-        </Dropdown>
-      </Card.Grid>
-    </Card>
+    <div>
+      {pullRequests.map((item) => {
+        const existingLabels = item?.labels
+          ? item?.labels?.map((label) => label.name)
+          : [];
+        const matchedLabel =
+          existingLabels?.find((label) =>
+            gitLabel.some((lbl) => lbl.name === label)
+          ) || "No Label";
+
+        return (
+          <Card
+            key={item.id}
+            title={item.title}
+            bordered
+            style={{ width: "100%", marginBottom: "16px" }}
+          >
+            {item?.user && (
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "10px" }}
+              >
+                <Image
+                  className="bg-cover rounded-full"
+                  width={40}
+                  height={40}
+                  src={item.user.avatar_url}
+                  alt="User Avatar"
+                />
+                <h6 className="text-lg">{item.user.login}</h6>
+                <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-green-600/20 ring-inset">
+                  {selectedLabel[item.id] || matchedLabel}
+                </span>
+              </div>
+            )}
+            <div className="flex items-center justify-between mt-3">
+              <Link target="_blank" href={item?.html_url}>
+                {item?.html_url}
+              </Link>
+              <Select
+                placeholder="Status"
+                options={gitLabel.map((lbl) => ({
+                  value: lbl.id,
+                  label: lbl.name,
+                }))}
+                onChange={(value) =>
+                  handleStatusChange(value, item?.number, existingLabels)
+                }
+                value={
+                  selectedLabel[item.id] ||
+                  (matchedLabel !== "No Label" ? matchedLabel : undefined)
+                }
+              />
+            </div>
+          </Card>
+        );
+      })}
+    </div>
   );
 }
